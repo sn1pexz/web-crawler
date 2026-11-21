@@ -1,0 +1,114 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
+}
+
+group = 'com.webcrawler'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+javafx {
+    version = '17.0.12'
+    modules = ['javafx.controls', 'javafx.fxml']
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.jsoup:jsoup:1.18.1'
+    implementation 'com.h2database:h2:2.2.224'
+    implementation 'com.google.code.gson:gson:2.11.0'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+application {
+    mainClass = 'com.webcrawler.Launcher'
+}
+
+jar {
+    archiveFileName = 'webcrawler.jar'
+    manifest {
+        attributes('Main-Class': 'com.webcrawler.Launcher')
+    }
+}
+
+def jpackageInputDir = layout.buildDirectory.dir('jpackage-input')
+def jpackageOutputDir = layout.buildDirectory.dir('jpackage-output')
+
+tasks.register('stageJpackageInput', Sync) {
+    group = 'distribution'
+    description = 'Stages webcrawler.jar and runtime dependencies for jpackage.'
+    dependsOn tasks.named('jar')
+    from(tasks.named('jar'))
+    from(configurations.runtimeClasspath)
+    into jpackageInputDir
+}
+
+tasks.register('jpackageAppImage', Exec) {
+    group = 'distribution'
+    description = 'Packages the application as a self-contained app-image using jpackage.'
+    dependsOn tasks.named('stageJpackageInput')
+
+    def inputDirProvider = jpackageInputDir
+    def outputDirProvider = jpackageOutputDir
+    def appVersionValue = project.version.toString()
+    def toolchainLauncherProvider = javaToolchains.launcherFor(java.toolchain)
+
+    inputs.dir(inputDirProvider)
+    outputs.dir(outputDirProvider.map { it.dir('WebCrawler') })
+
+    doFirst {
+        def inputDir = inputDirProvider.get().asFile
+        def outputBaseDir = outputDirProvider.get().asFile
+        def appImageDir = new File(outputBaseDir, 'WebCrawler')
+        if (appImageDir.exists() && !appImageDir.deleteDir()) {
+            throw new GradleException("Failed to delete old app-image directory: ${appImageDir.absolutePath}")
+        }
+        outputBaseDir.mkdirs()
+
+        def isWindows = org.gradle.internal.os.OperatingSystem.current().isWindows()
+        def jpackageRelPath = isWindows ? 'bin/jpackage.exe' : 'bin/jpackage'
+        def toolchainHome = toolchainLauncherProvider.get().metadata.installationPath.asFile
+        def jpackageExe = new File(toolchainHome, jpackageRelPath)
+        if (!jpackageExe.exists()) {
+            jpackageExe = new File(System.getProperty('java.home'), jpackageRelPath)
+        }
+        if (!jpackageExe.exists()) {
+            throw new GradleException("jpackage executable not found at ${jpackageExe.absolutePath}")
+        }
+
+        commandLine(
+                jpackageExe.absolutePath,
+                '--type', 'app-image',
+                '--name', 'WebCrawler',
+                '--app-version', appVersionValue,
+                '--input', inputDir.absolutePath,
+                '--dest', outputBaseDir.absolutePath,
+                '--main-jar', 'webcrawler.jar',
+                '--main-class', 'com.webcrawler.Launcher',
+                '--java-options', '-Dfile.encoding=UTF-8'
+        )
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(Test).configureEach {
+    systemProperty 'file.encoding', 'UTF-8'
+}
+
+test {
+    useJUnitPlatform()
+}

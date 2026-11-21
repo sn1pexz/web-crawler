@@ -1,0 +1,8 @@
+.gradle/
+build/
+.idea/
+*.iml
+webcrawler.mv.db
+webcrawler.trace.db
+results/
+cache/
