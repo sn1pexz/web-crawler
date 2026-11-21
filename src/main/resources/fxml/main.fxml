@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.webcrawler.ui.MainController"
+            styleClass="app-root">
+
+    <top>
+        <HBox styleClass="app-header" alignment="CENTER_LEFT" spacing="12">
+            <VBox spacing="2">
+                <Label text="Веб-сканер" styleClass="app-title"/>
+                <Label text="Пошуковий веб-сканер із фільтрацією контенту, кешуванням та P2P-обходом"
+                       styleClass="app-subtitle"/>
+            </VBox>
+            <Region HBox.hgrow="ALWAYS"/>
+            <HBox alignment="CENTER_RIGHT" spacing="8">
+                <Label fx:id="headerModeLabel" text="Режим: Локальний" styleClass="mode-pill"/>
+                <Label fx:id="headerStatusBadge" text="Очікування" styleClass="status-badge, status-idle"/>
+            </HBox>
+        </HBox>
+    </top>
+
+    <center>
+        <TabPane fx:id="mainTabPane" tabClosingPolicy="UNAVAILABLE" styleClass="main-tab-pane">
+            <tabs>
+                <Tab fx:id="crawlTabItem" text="Обхід">
+                    <content>
+                        <fx:include fx:id="crawlTab" source="crawl-tab.fxml"/>
+                    </content>
+                </Tab>
+                <Tab fx:id="statisticsTabItem" text="Метадані та статистика">
+                    <content>
+                        <fx:include fx:id="statisticsTab" source="statistics-tab.fxml"/>
+                    </content>
+                </Tab>
+            </tabs>
+        </TabPane>
+    </center>
+
+    <bottom>
+        <HBox styleClass="app-footer" alignment="CENTER_LEFT" spacing="12">
+            <Label fx:id="footerStatusLabel" text="Готово до роботи." HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+            <Separator orientation="VERTICAL"/>
+            <Label fx:id="footerConnectionLabel" text="Підключення: локальний режим"/>
+            <Separator orientation="VERTICAL"/>
+            <Label fx:id="footerDataDirLabel" text="Каталог даних: —"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>
